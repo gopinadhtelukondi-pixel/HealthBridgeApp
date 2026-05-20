@@ -1,0 +1,799 @@
+DOCTOR DASHBOARD - STEP BY STEP IMPLEMENTATION GUIDE
+==================================================
+
+Project: HealthBridge - Transparent Healthcare Decision Platform
+Goal: Provide doctors with tools to view patient reviews, respond to reviews, and manage their profile information.
+
+Current Progress: Admin board completed ✓
+Next: Doctor Dashboard (Step 9)
+
+
+1. WHAT WE ARE BUILDING
+-----------------------
+
+The Doctor Dashboard is a private, doctor-only interface that allows doctors to:
+
+1. View all reviews submitted about them
+2. Filter reviews by moderation status (pending, approved, flagged)
+3. Read detailed patient feedback with ratings
+4. Respond to reviews publicly with professional comments
+5. Edit and update their profile information
+6. View analytics about their reviews and ratings
+7. Manage their medical credentials and certifications
+
+This dashboard helps doctors:
+- Respond to patient concerns professionally
+- Improve their services based on feedback
+- Build trust through transparent engagement
+- Maintain accurate profile information
+- Track patient satisfaction metrics
+
+Key principle: Doctors can only view/edit their own data; admins have broader permissions.
+
+
+2. USER INPUTS & FEATURES
+-------------------------
+
+A. Review Management Section:
+   - View all reviews for the doctor's profile
+   - Filter by status: All, Pending, Approved, Flagged
+   - Sort by: Newest, Oldest, Highest Rating, Lowest Rating
+   - Search reviews by keyword
+   - Read detailed review with all rating dimensions
+   - See patient name/verification status (respecting privacy)
+
+B. Review Response:
+   - Add a professional response to each review
+   - Character limit: 500 characters (keep it concise)
+   - Responses are public and visible to all patients
+   - Edit/update response within 24 hours of posting
+   - Delete response if needed (admin approval)
+
+C. Profile Management Section:
+   - Edit basic info: name, phone, hospital, city
+   - Update specialization/specialty
+   - Add/update medical license number (NMC ID)
+   - Upload/update profile photo
+   - Add professional bio/summary (max 500 chars)
+   - List medical qualifications/education
+   - Add achievements and certifications
+   - Update consultation fee
+   - Update experience years
+   - Add tags/specializations (cardiac, diabetes care, etc.)
+   - Toggle verified status (admin-only, informational)
+   - NABH certification status (informational)
+
+D. Analytics Dashboard:
+   - Average overall rating
+   - Average rating per dimension (communication, recovery, cost, waiting time, staff behavior)
+   - Total reviews received
+   - Verified vs anonymous review breakdown
+   - Recommendation percentage (% patients would recommend)
+   - Recent review trends (last 30 days, 90 days, all time)
+   - Review sentiment breakdown (positive, neutral, negative)
+   - Response rate to reviews
+
+
+3. DATA MODEL UPDATES
+---------------------
+
+Update server/models/Doctor.js to include:
+
+```
+certifications: [
+  {
+    name: String,
+    issuer: String,
+    year: Number,
+    documentUrl: String (optional, for future)
+  }
+],
+
+achievements: [
+  {
+    title: String,
+    year: Number,
+    description: String
+  }
+],
+
+qualifications: [
+  {
+    degree: String,
+    institution: String,
+    year: Number
+  }
+],
+
+bio: String (already exists, just confirm it's here),
+
+profile_updated_at: Date (to track last profile edit),
+
+response_count: Number (track how many reviews doctor has responded to),
+```
+
+These fields allow doctors to maintain a richer, more detailed profile.
+
+
+4. API ROUTES (server/routes/doctorRoutes.js)
+---------------------------------------------
+
+NEW ROUTES FOR DOCTOR DASHBOARD:
+
+GET /api/doctors/dashboard/:doctorId
+Purpose: Fetch doctor's own dashboard data (reviews count, analytics, etc.)
+Auth: Doctor-only (must match :doctorId)
+Returns: { totalReviews, averageRating, reviews: [...], analytics: {...} }
+
+PUT /api/doctors/:doctorId/profile
+Purpose: Update doctor's profile information
+Auth: Doctor-only (must match :doctorId)
+Body: { name, phone, hospital, city, spec, fee, exp, bio, education, certifications, achievements, tags }
+Returns: { message: "Profile updated", doctor: {...} }
+
+GET /api/doctors/:doctorId/reviews
+Purpose: Get all reviews for a doctor (with filters)
+Query params: ?status=pending|approved|flagged|all&sort=newest&page=1&limit=10
+Auth: Doctor-only (must match :doctorId) OR Admin
+Returns: [{ ...review with full details }]
+
+POST /api/reviews/:reviewId/response
+Purpose: Add a response to a review
+Auth: Doctor-only (doctor who wrote the review) OR Admin
+Body: { text: "Thank you for the feedback..." }
+Returns: { message: "Response added", review: {...} }
+
+PUT /api/reviews/:reviewId/response
+Purpose: Update an existing response
+Auth: Doctor-only (doctor who wrote the response) OR Admin
+Body: { text: "Updated response..." }
+Returns: { message: "Response updated", review: {...} }
+
+DELETE /api/reviews/:reviewId/response
+Purpose: Delete a response
+Auth: Doctor-only (doctor who wrote the response) OR Admin
+Returns: { message: "Response deleted" }
+
+GET /api/doctors/:doctorId/analytics
+Purpose: Get review analytics for dashboard
+Auth: Doctor-only (must match :doctorId) OR Admin
+Returns: { 
+  totalReviews, 
+  averageRating, 
+  avgCommunication, 
+  avgRecovery, 
+  avgCost, 
+  avgWaitingTime, 
+  avgStaffBehavior,
+  recommendationPercentage,
+  verifiedReviewCount,
+  sentimentBreakdown: { positive, neutral, negative },
+  responseRate
+}
+
+
+5. BACKEND IMPLEMENTATION
+-------------------------
+
+A. Update Doctor Model (server/models/Doctor.js):
+
+Add these fields to doctorSchema:
+
+```javascript
+certifications: [
+  {
+    name: String,
+    issuer: String,
+    year: Number,
+    documentUrl: String,
+  }
+],
+
+achievements: [
+  {
+    title: String,
+    year: Number,
+    description: String,
+  }
+],
+
+qualifications: [
+  {
+    degree: String,
+    institution: String,
+    year: Number,
+  }
+],
+
+profile_updated_at: {
+  type: Date,
+  default: Date.now,
+},
+
+response_count: {
+  type: Number,
+  default: 0,
+},
+```
+
+
+B. Update Review Model (server/models/Review.js):
+
+Ensure response field exists:
+
+```javascript
+response: {
+  text: String,
+  responderId: ObjectId,
+  respondedAt: Date,
+  respondentType: String, // 'doctor' or 'admin'
+}
+```
+
+
+C. Doctor Controller (server/controllers/doctorController.js):
+
+New function: updateDoctorProfile
+- Validates input (fee > 0, exp >= 0)
+- Only allows doctor to update their own profile
+- Updates Doctor model with new fields
+- Returns updated doctor object
+- Logs the update (for audit trail)
+
+New function: getDoctorDashboard
+- Fetches the doctor's own profile
+- Gets all reviews for that doctor
+- Calculates analytics
+- Returns dashboard data
+
+New function: getDoctorAnalytics
+- Calculates: total reviews, average ratings per dimension, recommendation %, sentiment breakdown
+- Returns formatted analytics object
+
+
+D. Review Controller (server/controllers/reviewController.js):
+
+New function: addReviewResponse
+- Takes reviewId and response text
+- Validates doctor owns the review's doctorId
+- Validates response text length (max 500 chars)
+- Adds response to review document
+- Increments doctor's response_count
+- Returns updated review
+
+New function: updateReviewResponse
+- Similar to addReviewResponse but for updates
+- Only allows within 24 hours of original response (optional rule)
+- Returns updated review
+
+New function: deleteReviewResponse
+- Removes response from review
+- Decrements doctor's response_count
+- Returns success message
+
+Update existing getDoctorReviews function:
+- Add filtering by status (pending, approved, flagged)
+- Add sorting options
+- Ensure only doctor of that profile can see pending reviews
+
+
+6. FRONTEND: DOCTOR DASHBOARD COMPONENTS
+----------------------------------------
+
+A. Main Page: src/pages/DoctorDashboard.jsx
+
+Structure:
+```
+DoctorDashboard
+├── Header: "My Dashboard"
+├── Analytics Section (card grid showing metrics)
+│   ├── Total Reviews Card
+│   ├── Average Rating Card
+│   ├── Recommendation Rate Card
+│   └── Response Rate Card
+├── Profile Management Section
+│   ├── Basic Info Card (editable)
+│   ├── Qualifications Card (editable)
+│   ├── Certifications Card (editable, add/remove)
+│   └── Photo Upload
+├── Reviews Section
+│   ├── Filter Tabs: All, Pending, Approved, Flagged
+│   ├── Search Box
+│   ├── Sort Dropdown
+│   ├── ReviewList Component (paginated)
+│   └── No Reviews Message
+└── Loading & Error States
+```
+
+Navigate to: /doctor/dashboard or /dashboard/doctor
+
+
+B. Component: src/components/doctor/DoctorAnalyticsCard.jsx
+
+Shows key metrics in card format:
+- Total Reviews
+- Average Rating (overall)
+- Recommendation Percentage
+- Response Rate
+- Verified Reviews Count
+
+Use color coding: green for good metrics, yellow for average, red for low.
+
+
+C. Component: src/components/doctor/ProfileEditForm.jsx
+
+Editable form for doctor profile:
+- Input fields for: name, email (read-only), phone, city, hospital, specialty
+- Input for consultation fee
+- Input for experience years
+- Textarea for bio (max 500 chars)
+- Input for education
+- Input for NMC ID (license)
+- Repeatable fields for qualifications
+- Repeatable fields for certifications
+- File upload for profile photo
+- Submit button with loading state
+- Success/error toast messages
+
+
+D. Component: src/components/doctor/DoctorReviewsList.jsx
+
+List of reviews with filtering:
+- Filter buttons: All | Pending | Approved | Flagged
+- Sort dropdown: Newest | Oldest | Highest Rating | Lowest Rating
+- Search input box
+- Pagination (10 reviews per page)
+- ReviewCard component for each review
+
+
+E. Component: src/components/doctor/DoctorReviewCard.jsx
+
+Enhanced review display:
+- Patient name/initials with verified badge
+- All rating dimensions displayed
+- Overall rating stars
+- Recommendation status (Yes/No)
+- Full review text
+- Created date
+- Response section:
+  - Show existing response (if any)
+  - "Add Response" button / "Edit Response" button
+  - Response form (modal or inline)
+- Moderation status badge (pending, approved, flagged)
+- Note about patient privacy
+
+
+F. Component: src/components/doctor/ReviewResponseForm.jsx
+
+Modal/form to add/edit response:
+- Textarea for response text
+- Character counter (max 500)
+- Cancel button
+- Submit button
+- Loading state
+- Success/error message
+
+
+G. Component: src/components/doctor/QualificationsList.jsx
+
+Manage qualifications/certifications:
+- List of current qualifications
+- "Add Qualification" button
+- Edit/Delete buttons per item
+- Form for adding new qualifications
+
+
+H. Protected Route Wrapper:
+
+Update router to check:
+- User is logged in
+- User role is 'doctor'
+- User is accessing their own dashboard
+- Redirect to login if not authenticated
+- Redirect to home if not a doctor
+
+
+7. AUTHENTICATION & AUTHORIZATION
+---------------------------------
+
+Middleware Check (protect /doctor/dashboard routes):
+
+```javascript
+const isDoctorOwner = (req, res, next) => {
+  const { doctorId } = req.params;
+  const user = req.user; // from auth token
+  
+  if (!user) return res.status(401).json({ message: "Unauthorized" });
+  if (user.role !== 'doctor') return res.status(403).json({ message: "Forbidden" });
+  if (user.doctorProfile !== doctorId && user.role !== 'admin') {
+    return res.status(403).json({ message: "Cannot access other doctor's dashboard" });
+  }
+  next();
+};
+```
+
+Apply to all doctor dashboard routes.
+
+
+8. FRONTEND ROUTES (Update src/main.jsx or Router)
+-------------------------------------------------
+
+Add new routes:
+
+```javascript
+{
+  path: "/doctor/dashboard",
+  element: <ProtectedRoute role="doctor"><DoctorDashboard /></ProtectedRoute>,
+}
+
+{
+  path: "/doctor/reviews",
+  element: <ProtectedRoute role="doctor"><DoctorReviews /></ProtectedRoute>,
+}
+
+{
+  path: "/doctor/profile",
+  element: <ProtectedRoute role="doctor"><DoctorProfile /></ProtectedRoute>,
+}
+```
+
+
+9. STATE MANAGEMENT / CONTEXT
+-----------------------------
+
+Doctor Context additions (src/context/AppContext.jsx):
+
+```javascript
+// Add these to DoctorProvider or create new DoctorContext:
+{
+  doctorData: { reviews, analytics, profile },
+  setDoctorData,
+  loadDoctorDashboard: (doctorId) => { /* fetch and cache */ },
+  addReviewResponse: (reviewId, text) => { /* POST response */ },
+  updateReviewResponse: (reviewId, text) => { /* PUT response */ },
+  deleteReviewResponse: (reviewId) => { /* DELETE response */ },
+  updateDoctorProfile: (data) => { /* PUT profile */ },
+  isLoading,
+  error,
+  clearError,
+}
+```
+
+Or use React Query/SWR for data fetching.
+
+
+10. HOOKS
+--------
+
+Create src/hooks/useDoctorDashboard.js:
+
+```javascript
+export const useDoctorDashboard = (doctorId) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchDoctorDashboard(doctorId)
+      .then(setData)
+      .catch(setError)
+      .finally(() => setLoading(false));
+  }, [doctorId]);
+
+  return { data, loading, error };
+};
+
+export const useDoctorReviews = (doctorId, filters = {}) => {
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetch = async () => {
+    setLoading(true);
+    try {
+      const data = await fetchDoctorReviews(doctorId, filters);
+      setReviews(data);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetch();
+  }, [doctorId, filters]);
+
+  return { reviews, loading, error, refetch: fetch };
+};
+
+export const useReviewResponse = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const addResponse = async (reviewId, text) => {
+    setLoading(true);
+    try {
+      const data = await addReviewResponse(reviewId, text);
+      return data;
+    } catch (err) {
+      setError(err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { addResponse, loading, error };
+};
+```
+
+
+11. API SERVICE FUNCTIONS (src/services/api.js)
+---------------------------------------------
+
+Add these functions:
+
+```javascript
+export const fetchDoctorDashboard = (doctorId) =>
+  api.get(`/doctors/dashboard/${doctorId}`).then(r => r.data);
+
+export const fetchDoctorReviews = (doctorId, filters = {}) => {
+  const params = new URLSearchParams(filters);
+  return api.get(`/doctors/${doctorId}/reviews?${params}`).then(r => r.data);
+};
+
+export const fetchDoctorAnalytics = (doctorId) =>
+  api.get(`/doctors/${doctorId}/analytics`).then(r => r.data);
+
+export const updateDoctorProfile = (doctorId, data) =>
+  api.put(`/doctors/${doctorId}/profile`, data).then(r => r.data);
+
+export const addReviewResponse = (reviewId, text) =>
+  api.post(`/reviews/${reviewId}/response`, { text }).then(r => r.data);
+
+export const updateReviewResponse = (reviewId, text) =>
+  api.put(`/reviews/${reviewId}/response`, { text }).then(r => r.data);
+
+export const deleteReviewResponse = (reviewId) =>
+  api.delete(`/reviews/${reviewId}/response`).then(r => r.data);
+```
+
+
+12. UX & VALIDATION RULES
+-------------------------
+
+Frontend Validation:
+
+1. Profile form:
+   - Name: required, min 2 chars, max 100 chars
+   - Email: read-only (cannot change)
+   - Phone: valid format check
+   - Fee: must be positive number
+   - Experience: must be non-negative number
+   - Bio: max 500 characters
+   - NMC ID: format validation (if country-specific)
+
+2. Response form:
+   - Text: required, max 500 characters
+   - Show character counter
+   - Disable submit if empty or over limit
+
+3. Review display:
+   - Hide pending reviews from doctor list (only show approved)
+   - But admin can see all statuses
+   - Show patient name only if not anonymous
+   - Show "Verified Patient" badge if applicable
+
+Loading & Error States:
+- Show skeleton loaders while fetching data
+- Display error toast if API fails
+- Show "Retry" button on error
+- Cache responses to avoid excessive API calls
+
+
+13. NAVIGATION & UX FLOW
+------------------------
+
+Doctor Login Flow:
+1. Doctor signs in via DoctorAuthModal
+2. Redirected to /doctor/dashboard
+3. Dashboard shows reviews, profile, analytics
+4. Doctor can filter/search reviews
+5. Doctor can click on review to expand and add response
+6. Doctor can go to profile tab to edit information
+7. Logout link in navbar
+
+Navigation Links:
+- Navbar: Add "Dashboard" link for doctors (shown based on user role)
+- Sidebar/Menu: Dashboard, My Profile, My Reviews, Analytics
+- Breadcrumb: Dashboard > Reviews / Profile / Analytics
+
+
+14. INTEGRATION POINTS
+---------------------
+
+Doctor Dashboard integrates with:
+
+1. Review System:
+   - Fetches reviews for the doctor
+   - Adds responses to reviews
+   - Updates review moderation status (admin-only)
+
+2. Doctor Profile:
+   - Updates doctor document
+   - Maintains qualification/certification history
+   - Tracks profile updates
+
+3. Authentication System:
+   - Verifies doctor identity
+   - Ensures role-based access
+   - Protects doctor's data
+
+4. Ranking Service (future):
+   - Dashboard shows current ranking metrics
+   - Ranking updates as new reviews arrive
+   - Dashboard can show improvement suggestions based on low ratings
+
+5. Admin Dashboard:
+   - Admins can manage doctor profiles
+   - Admins can moderate doctor responses
+   - Admins can override profile edits if needed
+
+
+15. SECURITY CONSIDERATIONS
+---------------------------
+
+1. Authentication:
+   - All dashboard routes require login
+   - Verify user is a doctor
+   - Verify doctor owns the profile being viewed/edited
+
+2. Authorization:
+   - Doctors can only edit their own profile
+   - Doctors can only add responses to their own reviews
+   - Doctors cannot change their own verified status (admin-only)
+   - Doctors cannot moderate other doctors' reviews
+
+3. Input Validation:
+   - Validate all text inputs server-side
+   - Sanitize HTML/script tags from responses
+   - Rate limit API endpoints
+   - Prevent duplicate submissions (debounce)
+
+4. Data Privacy:
+   - Don't expose patient personal info
+   - Hide contact details from public
+   - Allow anonymous reviews to stay anonymous
+   - Audit log all profile changes
+
+
+16. TESTING CHECKLIST
+---------------------
+
+Backend Tests:
+- [ ] Doctor can view their own dashboard
+- [ ] Doctor cannot view other doctors' dashboards
+- [ ] Doctor can update their own profile
+- [ ] Doctor cannot update other doctors' profiles
+- [ ] Doctor can add response to reviews of their profile
+- [ ] Response character limit is enforced
+- [ ] Analytics calculations are correct
+- [ ] Filtering reviews by status works
+- [ ] Pagination works correctly
+- [ ] Admin can access all doctor dashboards
+
+Frontend Tests:
+- [ ] Dashboard loads with all sections
+- [ ] Profile form submits and updates
+- [ ] Review list loads with pagination
+- [ ] Filter buttons change review list
+- [ ] Search filters reviews correctly
+- [ ] Response form modal opens/closes
+- [ ] Response form validates character count
+- [ ] Success toast shows after update
+- [ ] Error toast shows on failure
+- [ ] Redirects non-doctors to home page
+
+
+17. SEED DATA
+-----------
+
+Update scripts/seedDatabase.js to:
+- Add sample qualifications to doctors
+- Add sample certifications to doctors
+- Add sample responses to reviews
+- Set response_count for doctors
+- Create varying analytics (some doctors with many reviews, some with few)
+
+Example:
+```javascript
+const doctor = await Doctor.findByIdAndUpdate(
+  doctorId,
+  {
+    qualifications: [
+      { degree: "MBBS", institution: "Medical College", year: 2010 },
+      { degree: "MD (Cardiology)", institution: "City Hospital", year: 2015 }
+    ],
+    certifications: [
+      { name: "Advanced Cardiac Life Support", issuer: "AHA", year: 2023 },
+      { name: "Interventional Cardiology", issuer: "CVSI", year: 2022 }
+    ]
+  }
+);
+```
+
+
+18. NEXT STEPS AFTER DOCTOR DASHBOARD
+------------------------------------
+
+After Step 9 is complete:
+
+Step 10: Comparison Page
+- Compare doctors/hospitals side-by-side
+- Show ratings, fees, verified review counts
+- Extract and display key review themes
+
+Step 11: Ranking Service Integration
+- Use reviews to calculate doctor scores
+- Implement weighted ranking algorithm
+- Persist ranking metrics to database
+
+Step 12: Review Moderation UI
+- Advanced moderation for admins
+- Bulk actions on flagged reviews
+- Review approval workflow
+
+
+19. IMPLEMENTATION PRIORITY
+---------------------------
+
+HIGH PRIORITY (Core functionality):
+1. Update Doctor model with new fields
+2. Doctor profile update API endpoint
+3. View reviews for doctor
+4. Add/update review response endpoint
+5. Dashboard page layout
+6. Profile edit form component
+7. Review list with filters
+8. Analytics calculations
+
+MEDIUM PRIORITY (Enhanced UX):
+1. Analytics dashboard cards
+2. Review analytics breakdown
+3. Search reviews functionality
+4. Response edit/delete
+5. Qualifications/certifications management
+
+LOW PRIORITY (Nice to have):
+1. Review sentiment analysis
+2. Trend charts
+3. Export reviews as PDF
+4. Response templates/suggestions
+5. Review reminder notifications
+
+
+20. ESTIMATED COMPLEXITY & TIME
+------------------------------
+
+Backend:
+- Model updates: 30 min
+- Controller functions: 1 hour
+- Route setup: 30 min
+- Authentication middleware: 30 min
+Total Backend: ~2.5 hours
+
+Frontend:
+- Main dashboard page: 1 hour
+- Analytics cards: 1 hour
+- Profile form: 1 hour
+- Review list with filters: 1.5 hours
+- Response form: 1 hour
+- Context/hooks: 1.5 hours
+Total Frontend: ~6 hours
+
+Total Estimated Time: ~8.5 hours
+
+Can be split into:
+- Sprint 1 (4 hours): Core profile & review viewing
+- Sprint 2 (4.5 hours): Analytics, responses, filtering

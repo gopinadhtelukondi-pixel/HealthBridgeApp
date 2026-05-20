@@ -1,0 +1,250 @@
+REVIEW SYSTEM - STEP BY STEP IMPLEMENTATION GUIDE
+===============================================
+
+Project: HealthBridge - Patient Review & Rating System
+Goal: Collect trustworthy patient reviews with granular ratings, protect against fake or duplicate reviews, surface reviewer verification, and use reviews to improve doctor ranking and recommendations.
+
+1. WHAT WE ARE BUILDING
+-----------------------
+
+A review system that lets patients rate doctors across multiple dimensions, submit optional text feedback (with anonymous option), and allows doctors and admins to respond and moderate. 
+Reviews will feed into the doctor ranking service and influence recommendations.
+
+Key capabilities:
+- Multi-dimension ratings: communication, cost, recovery, waiting time, staff behavior
+- Recommendation flag (would recommend, yes/no)
+- Anonymous mode with optional verified-patient badge
+- Doctor responses (public)
+- Basic moderation and fake-review protections
+- Integration with ranking and recommendation services
+
+2. FIRST VERSION PRINCIPLES
+---------------------------
+
+- Start simple and auditable: store raw ratings and flags; use deterministic rules for moderation and ranking adjustments.
+- Prioritize privacy: support anonymous reviews while preserving a verified flag for authenticated patients who matched an appointment record.
+- Make moderation visible: admin tools for reviewing flagged entries and setting status.
+
+3. USER INPUTS (FRONTEND)
+-------------------------
+
+Review submission form fields:
+- `doctorId` (hidden): doctor being reviewed
+- `patientId` (if logged in; optional)
+- `anonymous` (boolean toggle)
+- Ratings (1-5 stars): communication, cost, recovery, waitingTime, staffBehavior
+- `recommend` (yes/no)
+- `text` (optional free text)
+- `attachments` (optional: images) — handled by upload middleware
+
+UX rules:
+- Make star inputs required for each rating (or at least one required rating) depending on product decision.
+- If `anonymous` is checked, warn user that verification cannot be shown publicly.
+
+4. DATA MODEL (server/models/Review.js)
+-------------------------------------
+
+Core schema fields:
+- `doctorId`: ObjectId ref `Doctor` (required)
+- `patientId`: ObjectId ref `AuthUser` (nullable for anonymous)
+- `ratings`:
+  - `communication`: Number (1-5)
+  - `cost`: Number (1-5)
+  - `recovery`: Number (1-5)
+  - `waitingTime`: Number (1-5)
+  - `staffBehavior`: Number (1-5)
+- `recommend`: Boolean
+- `text`: String
+- `anonymous`: Boolean (default false)
+- `verifiedPatient`: Boolean (default false)
+- `response`: { text, responderId, createdAt } (doctor response)
+- `flags`: [String] (e.g., 'suspicious-language', 'duplicate', 'extreme-no-details')
+- `moderationStatus`: Enum('pending','approved','rejected') default 'pending'
+- `createdAt`, `updatedAt`
+
+Indexes and constraints:
+- Compound index on `doctorId` + `patientId` to detect duplicates
+- Index on `doctorId` + `createdAt` for fast listing
+
+5. API ROUTES (server/routes/reviewRoutes.js)
+--------------------------------------------
+
+- POST `/api/reviews` — create review (auth optional)
+- GET  `/api/reviews?doctorId=...&page=...&limit=...` — list reviews for a doctor
+- GET  `/api/reviews/:id` — get one review
+- PUT  `/api/reviews/:id` — update (doctor response or admin moderation)
+- DELETE `/api/reviews/:id` — admin delete
+
+Authentication/Authorization:
+- Submitting requires minimal validation; `patientId` must match auth if present.
+- Updating moderation fields requires admin role; adding `response` requires doctor role for that doctor.
+
+6. CONTROLLER BEHAVIOR (server/controllers/reviewController.js)
+--------------------------------------------------------------
+
+Create flow:
+1. Validate required fields and rating ranges (1-5).
+2. Normalize `patientId`: if `anonymous` true, set `patientId = null` and `verifiedPatient = false`.
+3. Duplicate check: if `patientId` exists, reject if there is a prior review for same `doctorId` within X days (configurable, e.g., 30 days).
+4. Flag rules:
+   - Suspicious language: run a simple blacklist (profane words, obvious spam). If matched, push `suspicious-language` flag and set `moderationStatus = 'pending'`.
+   - Extreme rating without text: if any rating is 1 or 5 and `text` length < threshold, add `extreme-no-details` flag.
+   - Rapid multiple reviews: if the same IP or device posts many reviews in short time, flag as `duplicate`.
+5. If authenticated and verified appointment record exists (optional integration), set `verifiedPatient = true`.
+6. Save review with default `moderationStatus = 'approved'` unless flags require manual review.
+
+List flow:
+- Return only `approved` reviews to public endpoints by default; admins can query flagged/pending reviews.
+- Support sorting by `createdAt`, `verified` first, or `helpfulness` if votes are added later.
+
+Update flow (doctor response / admin):
+- Doctors can append `response` (small text) to a review.
+- Admins can change `moderationStatus` and clear/add flags.
+
+7. FRONTEND: PAGES & COMPONENTS
+--------------------------------
+
+Pages/components to add:
+- `src/pages/ReviewPage.jsx` (optional central page)
+- `src/components/reviews/ReviewForm.jsx` — star inputs, text, anonymous toggle, submit button
+- `src/components/reviews/ReviewList.jsx` — list with pagination
+- `src/components/reviews/ReviewItem.jsx` — shows ratings, text, `verifiedPatient` badge, doctor response
+- `src/components/reviews/DoctorDashboardReviews.jsx` — doctor view to filter pending reviews and respond
+
+UX notes:
+- Show `verifiedPatient` badge when true.
+- If `moderationStatus` ≠ `approved` and user is not admin, hide review.
+- Provide client-side validation for ratings and text.
+
+8. RANKING SERVICE INTEGRATION (server/services/rankingService.js)
+----------------------------------------------------------------
+
+Use reviews to compute or refine the doctor's ranking metrics.
+
+Compute per-doctor averages and aggregates:
+- avgCommunication, avgRecovery, avgCost, avgWaitingTime, avgStaffBehavior
+- recommendationPercentage = count(recommend==true)/total
+- verifiedReviewCount, recentReviewBoost (more weight to reviews within last N months)
+
+Weighted score example (normalized 0-1):
+score = 0.30*avgCommunication + 0.25*avgRecovery + 0.15*(1 - avgCost/5) + 0.10*(1 - avgWaitingTime/5) + 0.20*experienceFactor
+
+Implementation:
+- Update `rankingService` to re-calculate scores when new reviews are added (either background job or on write with caching).
+- Use `verifiedPatient` reviews to compute a separate `verifiedTrustScore` and boost doctors with higher verified counts.
+
+9. DOCTOR DASHBOARD
+--------------------
+
+Features:
+- View reviews for your profile (with filters: pending, approved, flagged)
+- Post a short public `response` to each review
+- Edit/update profile fields: certifications, achievements, fee, specialty, hospital list
+- Mark replies as private notes (optional)
+
+API additions:
+- PUT `/api/doctors/:id/profile` — update doctor profile (doctor-only)
+- POST `/api/reviews/:id/response` — add response (doctor-only)
+
+10. COMPARISON PAGE
+-------------------
+
+Add compare button on doctor/hospital cards. When user selects up to N items (2-3), present a comparison page showing:
+- Side-by-side ratings (averages per dimension)
+- Fee comparison
+- Verified review counts
+- Key pros/cons derived from review tags (e.g., ‘fast recovery’, ‘good communication’)
+
+Front-end components:
+- `src/pages/ComparePage.jsx`
+- `src/components/CompareCard.jsx`
+
+11. MODERATION & FAKE-REVIEW PROTECTION
+--------------------------------------
+
+Basic rules to implement first (operational, deterministic):
+- Duplicate review blocking: same `patientId` + `doctorId` within X days.
+- Suspicious language flag: simple blacklist-derived flag.
+- Extreme rating without details: flag if rating is 1 or 5 and text < Y chars.
+- Rapid posting detection: flag multiple reviews from same IP/device.
+
+Operational flows:
+- Flagged reviews default to `pending` and are hidden from public lists.
+- Admin UI lists flagged reviews with quick actions: `approve`, `reject`, `request more info`.
+- Keep an audit log of moderation actions.
+
+12. AI & NLP (FUTURE)
+---------------------
+
+Short-term: use deterministic tags extracted from review text (keyword matching) to build `tags` like `good-communication`, `long-wait`, `kind-staff`.
+
+Long-term: run NLP to extract sentiment, topics, and named entities; use models to detect synthetic/fake text patterns.
+
+13. SEED DATA & TESTS
+---------------------
+
+Seed data:
+- Add sample reviews to `scripts/seedDatabase.js` for multiple doctors: verified and anonymous, flagged and approved cases.
+
+Tests:
+- Endpoint tests: create review, duplicate rejection, flagging behavior.
+- Integration tests: ensure ranking updates after review creation.
+
+14. API EXAMPLE (Create Review)
+------------------------------
+
+POST /api/reviews
+Body:
+{
+  "doctorId": "642...",
+  "patientId": "5f3...",   // optional
+  "anonymous": false,
+  "ratings": {"communication":5,"cost":3,"recovery":4,"waitingTime":2,"staffBehavior":5},
+  "recommend": true,
+  "text": "Quick visit, explained diagnosis well."
+}
+
+Response (201): created review or (400) validation error
+
+15. RUN & VERIFY
+-----------------
+
+Start server (server folder):
+
+  cd server
+  npm install
+  npm run dev
+
+Start frontend (root):
+
+  npm install
+  npm run dev
+
+Test flows:
+- Submit via frontend review form
+- Verify listing on doctor page
+- Post doctor response via dashboard
+- Check ranking changes after multiple review submissions
+
+16. MVP RESULT
+--------------
+
+Users can submit multi-dimension reviews (anonymous or verified), doctors can respond, and admins can moderate flagged content. Reviews feed ranking and recommendations to improve decision quality.
+
+17. NEXT FEATURES
+------------------
+
+- NLP-based content analysis and fake-review detection
+- Review helpfulness votes and sorting
+- Email/webhooks to ask verified patients for reviews after visits
+- Rich analytics dashboard for doctors (trends, sentiment)
+
+18. NEXT STEPS (CONCRETE)
+-------------------------
+1. Implement `server/models/Review.js` and migration/seed entries.
+2. Implement `server/controllers/reviewController.js` with create/list/update/delete.
+3. Add `server/routes/reviewRoutes.js` and wire into `server/index.js`.
+4. Create frontend `ReviewForm`, `ReviewList`, and doctor dashboard review components.
+5. Update `rankingService` to consume review aggregates.
+
+If you want, I can start implementing step 1 now (model + schema). Reply `yes` to proceed.

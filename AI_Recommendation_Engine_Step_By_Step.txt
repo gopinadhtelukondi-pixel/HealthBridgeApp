@@ -1,0 +1,547 @@
+AI RECOMMENDATION ENGINE - STEP BY STEP IMPLEMENTATION GUIDE
+============================================================
+
+Project: HealthBridge - Transparent Healthcare Decision Platform
+Goal: Recommend suitable doctors and hospitals based on patient needs, budget, symptoms, location, and smart ranking signals.
+
+
+1. WHAT WE ARE BUILDING
+-----------------------
+
+The AI Recommendation Engine will help patients answer:
+
+"Which doctor or hospital should I choose for my problem, budget, and location?"
+
+The patient enters:
+
+- Symptoms or health problem
+- Disease category or specialty
+- Budget
+- City/location
+- Urgency level
+- Preference, such as affordable, best care, low waiting time, or high recovery
+
+The system recommends:
+
+- Best matching doctors
+- Affordable alternatives
+- Nearby hospitals
+- Estimated treatment cost
+- Reason why each doctor/hospital is recommended
+
+
+2. FIRST VERSION SHOULD BE RULE-BASED
+-------------------------------------
+
+Do not start with complex AI immediately.
+
+First version should be a smart rule-based recommendation engine using:
+
+- Doctor specialty
+- Doctor city
+- Smart ranking score
+- Affordability score
+- Recovery score
+- Communication score
+- Waiting time score
+- Recommendation percentage
+- Treatment cost data
+- Hospital availability
+
+Later, this can be upgraded with:
+
+- NLP symptom understanding
+- ML ranking model
+- LLM explanation generation
+- Voice assistant
+
+
+3. USER INPUTS
+--------------
+
+Frontend recommendation form should collect:
+
+- symptoms: String
+- specialty: String
+- city: String
+- budget: Number
+- urgency: "normal", "soon", "emergency"
+- preference: "bestTrust", "affordable", "recovery", "communication", "lowWait"
+- treatment: optional cost treatment key
+
+Example:
+
+symptoms:
+"Chest pain and breathing difficulty"
+
+specialty:
+"Cardiologist"
+
+city:
+"Vijayawada"
+
+budget:
+50000
+
+urgency:
+"soon"
+
+preference:
+"affordable"
+
+
+4. SYMPTOM TO SPECIALTY MAPPING
+-------------------------------
+
+For first version, create a simple mapping.
+
+Examples:
+
+cardiology:
+
+- chest pain
+- heart
+- breathlessness
+- bp
+- blood pressure
+- palpitation
+
+neurology:
+
+- headache
+- migraine
+- seizures
+- stroke
+- numbness
+- memory
+
+orthopedics:
+
+- knee
+- bone
+- fracture
+- joint pain
+- back pain
+- hip
+
+nephrology:
+
+- kidney
+- dialysis
+- urine
+- creatinine
+
+oncology:
+
+- cancer
+- tumor
+- chemotherapy
+
+gynecology:
+
+- pregnancy
+- delivery
+- period
+- fertility
+
+If user selects specialty manually, use that first.
+If not, infer specialty from symptoms.
+
+
+5. BACKEND DESIGN
+-----------------
+
+Create:
+
+server/services/recommendationService.js
+
+Main function:
+
+getRecommendations(input)
+
+This service should:
+
+1. Read patient inputs.
+2. Infer specialty from symptoms if specialty is empty.
+3. Fetch ranked doctors using rankingService.
+4. Filter by city and specialty.
+5. Score each doctor according to user preference.
+6. Filter or tag doctors based on budget.
+7. Add explanation text.
+8. Return top recommendations.
+
+
+6. RECOMMENDATION SCORING
+-------------------------
+
+Each doctor already has ranking data.
+
+Base score:
+
+doctor.ranking.trustScore
+
+Then adjust based on preference:
+
+If preference = affordable:
+
+recommendationScore =
+trustScore * 0.45 +
+affordabilityScore * 0.40 +
+recommendationPercentage * 0.15
+
+If preference = recovery:
+
+recommendationScore =
+trustScore * 0.40 +
+recoveryScore * 0.40 +
+communicationScore * 0.20
+
+If preference = communication:
+
+recommendationScore =
+trustScore * 0.40 +
+communicationScore * 0.45 +
+recommendationPercentage * 0.15
+
+If preference = lowWait:
+
+recommendationScore =
+trustScore * 0.45 +
+waitingTimeScore * 0.40 +
+communicationScore * 0.15
+
+If preference = bestTrust:
+
+recommendationScore =
+trustScore
+
+
+7. BUDGET HANDLING
+------------------
+
+Budget should not hard reject every doctor immediately.
+
+Instead, tag recommendations:
+
+- Within budget
+- Slightly above budget
+- Above budget
+
+Simple logic:
+
+estimatedVisitCost = doctor.fee
+
+If treatment cost is available:
+
+estimatedTotalCost = treatment estimate or average review cost
+
+Budget status:
+
+- estimatedCost <= budget: "Within budget"
+- estimatedCost <= budget * 1.25: "Slightly above budget"
+- otherwise: "Above budget"
+
+Doctors within budget should get a small score boost.
+
+
+8. URGENCY HANDLING
+-------------------
+
+If urgency = emergency:
+
+Prioritize:
+
+- hospitals with emergency = true
+- doctors with low waiting time
+- nearby city match
+
+For emergency mode:
+
+Recommendation should say:
+
+"For urgent symptoms, contact emergency services or visit the nearest emergency hospital immediately. This tool is decision-support, not emergency medical advice."
+
+Important:
+
+Never allow the AI recommendation engine to delay emergency care.
+
+
+9. HOSPITAL RECOMMENDATIONS
+---------------------------
+
+Use Hospital collection.
+
+Recommend hospitals based on:
+
+- city
+- emergency availability
+- transparencyScore
+- departments matching inferred specialty
+- number of beds
+- accreditation
+
+Return:
+
+- top hospitals
+- emergency hospitals
+- affordability/transparency notes
+
+
+10. API ROUTES
+--------------
+
+Create:
+
+server/routes/recommendationRoutes.js
+
+Route:
+
+POST /api/recommendations
+
+Request body:
+
+{
+  symptoms: "chest pain",
+  specialty: "Cardiologist",
+  city: "Vijayawada",
+  budget: 50000,
+  urgency: "soon",
+  preference: "affordable",
+  treatment: "angioplasty"
+}
+
+Response:
+
+{
+  inferredSpecialty: "Cardiologist",
+  urgencyNotice: "...",
+  doctors: [...],
+  hospitals: [...],
+  costEstimate: {...},
+  explanation: "..."
+}
+
+
+11. FRONTEND PAGE
+-----------------
+
+Create:
+
+healthbridge-app/src/pages/RecommendationPage.jsx
+
+Route:
+
+/recommend
+
+Form fields:
+
+- Symptoms/problem textarea
+- Specialty dropdown
+- City input
+- Budget input
+- Urgency select
+- Preference select
+- Treatment select
+
+Button:
+
+"Get Recommendations"
+
+
+12. FRONTEND COMPONENTS
+-----------------------
+
+Create:
+
+healthbridge-app/src/components/features/recommendations/RecommendationForm.jsx
+healthbridge-app/src/components/features/recommendations/RecommendationResults.jsx
+healthbridge-app/src/components/features/recommendations/RecommendedDoctorCard.jsx
+healthbridge-app/src/components/features/recommendations/RecommendedHospitalCard.jsx
+
+RecommendedDoctorCard should show:
+
+- Doctor name
+- Specialty
+- Hospital
+- Trust score
+- Recommendation score
+- Ranking labels
+- Budget status
+- Avg waiting time
+- Recommendation reason
+
+RecommendedHospitalCard should show:
+
+- Hospital name
+- City
+- Emergency availability
+- Transparency score
+- Departments
+- Accreditation
+- Recommendation reason
+
+
+13. FRONTEND API METHOD
+-----------------------
+
+Update:
+
+healthbridge-app/src/services/api.js
+
+Add:
+
+getRecommendations(data)
+
+Code:
+
+POST /recommendations
+
+
+14. NAVIGATION
+--------------
+
+Add link to Navbar:
+
+"AI Recommend"
+
+Route:
+
+/recommend
+
+Add route in App.jsx:
+
+<Route path="/recommend" element={<RecommendationPage />} />
+
+
+15. EXPLANATION ENGINE
+----------------------
+
+Each recommendation should explain why it was selected.
+
+Example doctor explanation:
+
+"Recommended because this doctor has a high trust score, strong communication rating, and reported costs appear within your budget."
+
+Example affordable explanation:
+
+"This doctor is a good affordable option because consultation fees are lower than similar specialists in your city while patient satisfaction remains strong."
+
+Example emergency explanation:
+
+"This hospital is listed because it provides emergency services in your selected city."
+
+
+16. SAFETY AND MEDICAL DISCLAIMER
+---------------------------------
+
+Always show:
+
+"HealthBridge recommendations are decision-support signals based on patient-reported data and public profile information. They are not medical diagnosis or emergency advice."
+
+For emergency urgency:
+
+"If symptoms are severe or life-threatening, call emergency services or visit the nearest emergency hospital immediately."
+
+
+17. IMPLEMENTATION ORDER
+------------------------
+
+Step 1:
+Create recommendationService.js.
+
+Step 2:
+Add symptom-to-specialty mapping.
+
+Step 3:
+Use rankingService.getRankedDoctors() inside recommendationService.
+
+Step 4:
+Add hospital recommendation logic.
+
+Step 5:
+Add optional treatment cost estimate logic.
+
+Step 6:
+Create recommendationController.js.
+
+Step 7:
+Create recommendationRoutes.js.
+
+Step 8:
+Mount route in server/index.js.
+
+Step 9:
+Add frontend API method getRecommendations().
+
+Step 10:
+Create recommendation page and components.
+
+Step 11:
+Add route in App.jsx.
+
+Step 12:
+Add Navbar link.
+
+Step 13:
+Test recommendations with different symptoms and preferences.
+
+
+18. TEST CASES
+--------------
+
+Backend:
+
+- Symptoms infer correct specialty.
+- Manual specialty overrides inferred specialty.
+- City filter works.
+- Affordable preference prioritizes affordability score.
+- Recovery preference prioritizes recovery score.
+- Emergency urgency prioritizes emergency hospitals.
+- Budget status is calculated correctly.
+- No matching doctors returns helpful empty response.
+
+Frontend:
+
+- Form validates symptoms or specialty.
+- Budget must not be negative.
+- Loading state appears.
+- Recommended doctors display clearly.
+- Recommended hospitals display clearly.
+- Safety disclaimer is visible.
+- Emergency warning is visible when urgency = emergency.
+
+
+19. MVP RESULT
+--------------
+
+After this feature is built, HealthBridge will be able to guide patients from problem to decision:
+
+Patient enters symptoms, location, and budget.
+
+System returns:
+
+- recommended doctors
+- recommended hospitals
+- estimated cost
+- explanation
+- safety disclaimer
+
+This turns the app from a search platform into a true patient decision-support platform.
+
+
+20. NEXT FEATURE AFTER AI RECOMMENDATION
+----------------------------------------
+
+After this, the next best feature is:
+
+Treatment Cost Transparency Upgrade
+
+Because recommendations become stronger when the platform can explain:
+
+- consultation cost
+- expected treatment range
+- hidden expenses
+- medicine cost
+- room charges
+- insurance support
+

@@ -1,0 +1,468 @@
+PATIENT REVIEW SYSTEM - STEP BY STEP IMPLEMENTATION GUIDE
+=========================================================
+
+Project: HealthBridge - Transparent Healthcare Decision Platform
+Goal: Build a safe, ethical, verified patient review system that helps future patients compare doctors and hospitals using real treatment experiences.
+
+
+1. WHAT WE ARE BUILDING
+-----------------------
+
+The Patient Review System will allow logged-in patients to submit structured reviews about:
+
+- Disease/problem faced
+- Doctor consulted
+- Hospital visited
+- Treatment duration
+- Approximate cost spent
+- Medicines prescribed
+- Recovery experience
+- Doctor communication quality
+- Hospital cleanliness
+- Waiting time
+- Staff behavior
+- Whether treatment worked
+- Whether they recommend the doctor/hospital
+- Anonymous mode
+- Optional bill/document verification later
+
+These reviews will be stored in MongoDB and used later for:
+
+- Doctor ranking
+- Hospital ranking
+- Cost transparency
+- AI recommendations
+- Fake review detection
+- Patient satisfaction analytics
+
+
+2. DATABASE DESIGN
+------------------
+
+We should create a new MongoDB model:
+
+server/models/Review.js
+
+Suggested fields:
+
+- patient: ObjectId reference to AuthUser
+- doctor: ObjectId reference to Doctor
+- hospitalName: String
+- hospitalId: optional ObjectId reference to Hospital
+- disease: String
+- treatment: String
+- treatmentDuration: String
+- approximateCost: Number
+- medicines: String
+- recoveryExperience: String
+- doctorCommunication: Number, 1 to 5
+- hospitalCleanliness: Number, 1 to 5
+- waitingTime: Number, minutes
+- staffBehavior: Number, 1 to 5
+- treatmentWorked: Boolean
+- wouldRecommend: Boolean
+- overallRating: Number, 1 to 5
+- reviewText: String
+- anonymous: Boolean
+- verifiedPatient: Boolean, default false
+- moderationStatus: "pending", "approved", "rejected", "flagged"
+- sentiment: "positive", "neutral", "negative"
+- flags: Array of strings
+- createdAt / updatedAt timestamps
+
+Important:
+
+Reviews should not immediately affect public ranking unless moderationStatus is approved.
+
+
+3. BACKEND API ROUTES
+---------------------
+
+Create:
+
+server/routes/reviewRoutes.js
+
+Required routes:
+
+POST /api/reviews
+Purpose: Submit a new patient review.
+
+GET /api/reviews/doctor/:doctorId
+Purpose: Fetch approved reviews for a doctor profile page.
+
+GET /api/reviews/hospital/:hospitalId
+Purpose: Fetch approved reviews for a hospital page.
+
+GET /api/reviews/me
+Purpose: Fetch reviews submitted by the logged-in patient.
+
+PATCH /api/reviews/:id/moderation
+Purpose: Future admin route to approve/reject/flag reviews.
+
+For now, since we do not have JWT fully implemented, frontend can send patientId from the current logged-in user. Later, JWT middleware should protect this properly.
+
+
+4. BACKEND CONTROLLER LOGIC
+---------------------------
+
+Create:
+
+server/controllers/reviewController.js
+
+Functions:
+
+createReview()
+- Validate required fields.
+- Check patient exists.
+- Check doctor exists.
+- Prevent empty or very short review text.
+- Prevent rating values outside 1 to 5.
+- Calculate simple sentiment.
+- Save review with moderationStatus = "pending" or "approved".
+
+getDoctorReviews()
+- Return only approved reviews for a doctor.
+- Hide patient identity if anonymous = true.
+
+getHospitalReviews()
+- Return only approved hospital reviews.
+
+getMyReviews()
+- Return reviews submitted by current patient.
+
+moderateReview()
+- Admin/moderator updates status.
+
+
+5. VALIDATIONS
+--------------
+
+Frontend and backend should both validate.
+
+Required fields:
+
+- doctor
+- disease
+- treatment
+- approximateCost
+- doctorCommunication
+- hospitalCleanliness
+- staffBehavior
+- treatmentWorked
+- wouldRecommend
+- overallRating
+- reviewText
+
+Validation rules:
+
+- approximateCost must be 0 or above.
+- waitingTime must be 0 or above.
+- rating fields must be between 1 and 5.
+- reviewText should be at least 20 characters.
+- disease and treatment should not be empty.
+- patient must be logged in.
+- doctors should not submit patient reviews.
+
+
+6. FRONTEND COMPONENTS
+----------------------
+
+Create:
+
+healthbridge-app/src/components/features/reviews/ReviewForm.jsx
+healthbridge-app/src/components/features/reviews/ReviewCard.jsx
+healthbridge-app/src/components/features/reviews/ReviewList.jsx
+
+ReviewForm.jsx:
+
+- Form for patient review submission.
+- Use dropdown/select for doctor.
+- Inputs for disease, treatment, duration, cost, medicines.
+- Sliders or star controls for ratings.
+- Toggle for anonymous review.
+- Toggle/checkbox for treatment worked.
+- Toggle/checkbox for would recommend.
+- Textarea for detailed recovery experience/review.
+- Submit button.
+- Show validation errors through existing toast system.
+
+ReviewCard.jsx:
+
+- Display review summary.
+- Show anonymous name if anonymous = true.
+- Show verified patient badge.
+- Show star rating.
+- Show cost, waiting time, treatment worked, recommendation.
+- Show moderation status if it is the user's own review.
+
+ReviewList.jsx:
+
+- Fetch reviews for selected doctor.
+- Show loading state.
+- Show empty state.
+
+
+7. FRONTEND PAGES
+-----------------
+
+Option 1:
+Add review submission inside DoctorDetailPage.
+
+This is best for the first version.
+
+On a doctor detail page:
+
+- Existing patient can read doctor info.
+- Add "Patient Reviews" section.
+- Add "Write Review" button.
+- If user is not logged in, show message: "Login as patient to write a review."
+- If user is doctor, hide review form.
+
+Option 2:
+Create separate page:
+
+/review/new
+
+This can come later.
+
+
+8. API SERVICE METHODS
+----------------------
+
+Update:
+
+healthbridge-app/src/services/api.js
+
+Add:
+
+createReview(data)
+getDoctorReviews(doctorId)
+getHospitalReviews(hospitalId)
+getMyReviews(patientId)
+
+
+9. DOCTOR PROFILE INTEGRATION
+-----------------------------
+
+DoctorDetailPage should:
+
+- Fetch doctor details.
+- Fetch reviews for that doctor.
+- Display approved reviews from MongoDB.
+- Show ReviewForm for logged-in patients.
+
+When a review is submitted:
+
+- Save to MongoDB.
+- Show success toast.
+- Refresh review list.
+- If moderationStatus is pending, tell user: "Review submitted and waiting for moderation."
+
+
+10. UPDATING DOCTOR SCORES
+--------------------------
+
+Later, once reviews are approved, we should calculate doctor stats:
+
+- averageRating
+- communicationScore
+- affordabilityScore
+- recoveryScore
+- recommendPercentage
+- averageWaitingTime
+- reviewCount
+
+These values can either:
+
+- be calculated live from reviews, or
+- be stored in Doctor model and updated whenever a review is approved.
+
+Recommended first version:
+
+Calculate live from approved reviews.
+
+Recommended optimized version later:
+
+Store aggregated score fields in Doctor model.
+
+
+11. SIMPLE SENTIMENT ANALYSIS
+-----------------------------
+
+First version can be rule-based.
+
+Positive words:
+
+- good
+- excellent
+- helpful
+- recovered
+- satisfied
+- recommend
+- caring
+- clean
+
+Negative words:
+
+- bad
+- rude
+- costly
+- delayed
+- poor
+- not recovered
+- worst
+- unclean
+
+If positive count > negative count:
+
+sentiment = positive
+
+If negative count > positive count:
+
+sentiment = negative
+
+Otherwise:
+
+sentiment = neutral
+
+Later, this can be replaced with real NLP/AI.
+
+
+12. FAKE REVIEW PROTECTION - FIRST VERSION
+------------------------------------------
+
+Basic rules:
+
+- One patient cannot submit multiple reviews for same doctor within 7 days.
+- Very short reviews are rejected.
+- Reviews with too many repeated words are flagged.
+- Reviews with abusive words are flagged.
+- Extremely negative review with no explanation is flagged.
+- New accounts can be marked as unverified initially.
+
+Review statuses:
+
+- pending
+- approved
+- rejected
+- flagged
+
+For now:
+
+Set all reviews to pending, or auto-approve normal reviews and flag suspicious ones.
+
+Recommended first build:
+
+Auto-approve clean reviews, flag suspicious reviews.
+
+
+13. PRIVACY AND ETHICS
+----------------------
+
+Important rules:
+
+- Do not show patient phone/email publicly.
+- Anonymous reviews should hide patient name.
+- Do not allow medical accusations without moderation.
+- Use wording like "patient-reported experience", not "proven fact".
+- Add medical disclaimer near reviews.
+- Allow doctors/hospitals to respond professionally later.
+
+Suggested disclaimer:
+
+"Reviews are patient-reported experiences and should not be treated as medical advice. HealthBridge moderates reviews for safety, privacy, and fairness."
+
+
+14. IMPLEMENTATION ORDER
+------------------------
+
+Step 1:
+Create Review model in backend.
+
+Step 2:
+Create review controller with create and fetch functions.
+
+Step 3:
+Create review routes and mount them in server/index.js.
+
+Step 4:
+Add API service methods in frontend.
+
+Step 5:
+Create ReviewForm component.
+
+Step 6:
+Create ReviewCard and ReviewList components.
+
+Step 7:
+Integrate reviews into DoctorDetailPage.
+
+Step 8:
+Add validation and toast messages.
+
+Step 9:
+Test by submitting a review as patient.
+
+Step 10:
+Verify review is stored in MongoDB.
+
+Step 11:
+Display submitted review on doctor detail page.
+
+Step 12:
+Add basic fake review flags.
+
+
+15. TEST CASES
+--------------
+
+Backend tests/manual checks:
+
+- Submit valid review.
+- Submit review without login/patientId.
+- Submit review for invalid doctor.
+- Submit review with rating above 5.
+- Submit review with negative cost.
+- Submit short review text.
+- Fetch doctor reviews.
+- Anonymous review hides patient name.
+
+Frontend tests/manual checks:
+
+- Patient can see review form.
+- Doctor cannot submit review.
+- Logged-out user is asked to login.
+- Validation messages appear.
+- Successful review shows toast.
+- Review list refreshes after submission.
+- Long text does not break UI.
+
+
+16. MVP RESULT
+--------------
+
+After this system is built, the platform will have a real foundation for healthcare transparency:
+
+- Patients can submit structured experiences.
+- Reviews are stored in MongoDB.
+- Doctor pages can show verified patient feedback.
+- Review data can later power rankings, recommendations, cost analysis, and trust scores.
+
+
+17. NEXT FEATURE AFTER REVIEWS
+------------------------------
+
+After Patient Review System, the best next feature is:
+
+Smart Doctor Ranking System
+
+Because ranking can use the review data we collect:
+
+- rating
+- recovery
+- cost
+- waiting time
+- recommendation
+- communication
+- affordability
+
