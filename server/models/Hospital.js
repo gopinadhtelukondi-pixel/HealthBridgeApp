@@ -54,6 +54,16 @@ const hospitalSchema = new mongoose.Schema(
       default: false,
     },
 
+    lat: {
+      type: Number,
+      default: null,
+    },
+
+    lng: {
+      type: Number,
+      default: null,
+    },
+
     departments: [
       {
         type: String,

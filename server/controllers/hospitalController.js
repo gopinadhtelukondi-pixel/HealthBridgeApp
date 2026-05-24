@@ -31,8 +31,12 @@ export const getHospitals = async (req, res) => {
 
 export const createHospital = async (req, res) => {
   try {
-    // FIX: add a POST path so new hospitals are stored in MongoDB.
-    const hospital = await Hospital.create(req.body);
+    const hospitalData = {
+      ...req.body,
+      logo: req.file?.path || req.body.logo,
+    };
+
+    const hospital = await Hospital.create(hospitalData);
     res.status(201).json(normalizeHospital(hospital));
   } catch (error) {
     res.status(500).json({

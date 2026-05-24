@@ -2,7 +2,7 @@ import multer from "multer";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import cloudinary from "../config/cloudinary.js";
 
-const storage = new CloudinaryStorage({
+const doctorStorage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: "healthbridge-doctors",
@@ -10,6 +10,23 @@ const storage = new CloudinaryStorage({
   },
 });
 
-const upload = multer({ storage });
+const hospitalStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "healthbridge-hospitals",
+    allowed_formats: ["jpg", "png", "jpeg", "webp"],
+  },
+});
 
-export default upload;
+const billStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "healthbridge-bills",
+    allowed_formats: ["jpg", "png", "jpeg", "webp", "pdf"],
+  },
+});
+
+export const uploadDoctorImage = multer({ storage: doctorStorage });
+export const uploadHospitalLogo = multer({ storage: hospitalStorage });
+export const uploadBill = multer({ storage: billStorage });
+export default multer({ storage: billStorage });

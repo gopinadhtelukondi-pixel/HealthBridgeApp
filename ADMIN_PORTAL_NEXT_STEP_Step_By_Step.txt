@@ -1,0 +1,31 @@
+HealthBridge — Admin Portal (Short Next Steps)
+
+Context:
+- Admin portal is temporary and used only for manual review moderation.
+- Future: replace manual admin checks with an LLM-based fake-review detector.
+
+Immediate next step (do now):
+1) Implement admin authentication + RBAC
+   - Add `role` to the user model and include role in JWT.
+   - Implement `auth` middleware and `authorize(roles)` middleware.
+   - Protect admin routes (approve/reject reviews, moderation dashboards).
+   - Create a seeded admin user for testing.
+
+Why:
+- Secures the existing manual moderation workflow until the LLM arrives.
+- Prevents unauthorized users from approving or removing reviews.
+
+Concrete action items (priority order):
+- Backend: add `role` field in `models/AuthUser.js` and include it in token issuance.
+- Middleware: add `auth.js` and `authorize.js` in `server/middleware/`.
+- Routes: protect routes in `server/routes/reviewRoutes.js` (or admin routes).
+- Seed: add an admin user in `server/scripts/seedDatabase.js` or a new seed script.
+- Logging: add audit logs for moderation actions (who approved/rejected + timestamp).
+- Tests: add a couple of integration tests for protected admin routes.
+
+Short notes for future (LLM transition):
+- Collect labeled review data (approved/rejected + reasons) — this will be training data for the LLM.
+- Add metadata fields on reviews (flags: suspicious, requires_manual_review, confidence).
+- Build a small pipeline to batch-send flagged reviews to the LLM for scoring.
+
+If you want, I can now implement the `role` field, `auth` + `authorize` middleware, and seed an admin user.

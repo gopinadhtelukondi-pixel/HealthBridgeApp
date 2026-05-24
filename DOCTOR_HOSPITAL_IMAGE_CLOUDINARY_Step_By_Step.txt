@@ -1,0 +1,52 @@
+Doctor and Hospital Image Upload with Cloudinary - Step by Step
+
+1. Configure Cloudinary environment variables
+   - Add to `server/.env`:
+     CLOUDINARY_CLOUD_NAME=<your-cloud-name>
+     CLOUDINARY_API_KEY=<your-api-key>
+     CLOUDINARY_API_SECRET=<your-api-secret>
+
+2. Enable Cloudinary uploads in the backend
+   - `server/config/cloudinary.js` already loads Cloudinary.
+   - `server/middleware/uploadMiddleware.js` now exports:
+     - `uploadDoctorImage` for doctor photo uploads
+     - `uploadHospitalLogo` for hospital logo uploads
+
+3. Wire the backend routes
+   - `server/routes/doctorRoutes.js`
+     - `POST /api/doctors` accepts optional `image` uploads
+     - `PUT /api/doctors/:id/profile` now accepts optional `image` uploads
+   - `server/routes/hospitalRoutes.js`
+     - `POST /api/hospitals` now accepts optional `logo` uploads
+
+4. Store uploaded Cloudinary URLs in MongoDB
+   - `server/controllers/doctorController.js`
+     - `updateDoctorProfile` now saves `req.file.path` into `doctor.image`
+     - parses JSON-encoded values from multipart form data
+   - `server/controllers/hospitalController.js`
+     - `createHospital` stores `req.file.path` into `hospital.logo`
+
+5. Add frontend upload UI for doctor photos
+   - `healthbridge-app/src/components/doctor/ProfileEditForm.jsx`
+     - new image picker with preview
+     - file input sends a `FormData` payload when a photo is selected
+     - existing profile fields keep working for JSON-style updates
+
+6. Display uploaded images in UI
+   - `healthbridge-app/src/components/features/doctors/DoctorCard.jsx`
+     - doctor cards now render `doctor.image` if present
+   - `healthbridge-app/src/components/features/doctors/DoctorDetail.jsx`
+     - doctor profile now shows the uploaded photo instead of initials
+   - `healthbridge-app/src/components/features/hospitals/HospitalCard.jsx`
+     - hospital listing card now shows `hospital.logo` if present
+
+7. Test the flow
+   - Start backend with `cd server && npm run dev` or `npm start`
+   - Start frontend with `cd healthbridge-app && npm run dev`
+   - Use the doctor profile edit form to upload a photo
+   - Use the hospital creation endpoint with `multipart/form-data` to upload a logo
+
+8. If you want, next upgrade can be:
+   - doctor profile image upload from registration/signup UI
+   - hospital logo update route
+   - image validation and size preview

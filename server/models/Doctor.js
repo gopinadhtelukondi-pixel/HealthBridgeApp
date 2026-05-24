@@ -29,6 +29,16 @@ const doctorSchema = new mongoose.Schema(
       required: true,
     },
 
+    lat: {
+      type: Number,
+      default: null,
+    },
+
+    lng: {
+      type: Number,
+      default: null,
+    },
+
     rating: {
       type: Number,
       default: 0,

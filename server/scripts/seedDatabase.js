@@ -5,6 +5,8 @@ import connectDB from "../config/db.js";
 import Doctor from "../models/Doctor.js";
 import Hospital from "../models/Hospital.js";
 import Review from "../models/Review.js";
+import AuthUser from "../models/AuthUser.js";
+import { hashPassword } from "../utils/password.js";
 import { DOCTORS } from "../data/doctors.js";
 import { HOSPITALS } from "../data/hospitals.js";
 
@@ -58,6 +60,24 @@ const seedDatabase = async () => {
     ];
 
     await Review.insertMany(sampleReviews);
+
+    // Ensure a seeded admin user exists for manual moderation/testing
+    const adminEmail = process.env.ADMIN_EMAIL || "admin@healthbridge.local";
+    const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+    const existingAdmin = await AuthUser.findOne({ email: adminEmail.toLowerCase().trim() });
+    if (!existingAdmin) {
+      await AuthUser.create({
+        name: "HealthBridge Admin",
+        email: adminEmail.toLowerCase().trim(),
+        phone: "",
+        city: "",
+        role: "admin",
+        passwordHash: hashPassword(adminPassword),
+      });
+      console.log(`Seeded admin user: ${adminEmail} (password: ${adminPassword})`);
+    } else {
+      console.log(`Admin user already exists: ${adminEmail}`);
+    }
 
     console.log(`Seeded ${doctors.length} doctors and ${hospitals.length} hospitals into MongoDB.`);
   } catch (error) {

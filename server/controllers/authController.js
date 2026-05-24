@@ -1,6 +1,7 @@
 import AuthUser from "../models/AuthUser.js";
 import Doctor from "../models/Doctor.js";
 import { hashPassword, verifyPassword } from "../utils/password.js";
+import { signToken } from "../middleware/auth.js";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRegex = /^[0-9+\-\s()]{10,16}$/;
@@ -61,7 +62,7 @@ export const registerPatient = async (req, res) => {
       passwordHash: hashPassword(req.body.password),
     });
 
-    res.status(201).json({ user: sanitizeUser(user) });
+    res.status(201).json({ user: sanitizeUser(user), token: signToken(user) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -119,6 +120,7 @@ export const registerDoctor = async (req, res) => {
     res.status(201).json({
       user: sanitizeUser(createdUser, { doctorId: doctor._id.toString(), hospital: doctor.hospital }),
       doctor,
+      token: signToken(createdUser),
     });
   } catch (error) {
     if (createdUser) await AuthUser.findByIdAndDelete(createdUser._id);
@@ -140,7 +142,7 @@ export const loginUser = async (req, res) => {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    res.json({ user: sanitizeUser(user) });
+    res.json({ user: sanitizeUser(user), token: signToken(user) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

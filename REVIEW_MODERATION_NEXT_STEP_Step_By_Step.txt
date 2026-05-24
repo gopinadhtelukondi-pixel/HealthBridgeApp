@@ -1,0 +1,37 @@
+HealthBridge — Next Step (Review Moderation)
+
+Context:
+- Admin authentication is not needed for now.
+- Admin portal remains as a temporary manual review moderation interface.
+- The long-term plan is to replace manual admin checks with an LLM fake-review detector.
+
+Immediate next step:
+1) Build review moderation and fraud detection support.
+   - Keep the admin review portal for manual approval/rejection.
+   - Add review metadata fields to support moderation status and flags.
+   - Implement simple rule-based fraud checks now.
+
+Why this is the right next step:
+- Review moderation is core to HealthBridge's credibility.
+- It creates labeled review data for future LLM training.
+- It improves transparency without requiring admin auth changes.
+
+Concrete actions:
+- Update `server/models/Review.js` to include: `moderationStatus`, `flags`, `fraudScore`, `reviewSource`.
+- Ensure admin can mark reviews as `pending`, `approved`, or `rejected` in the backend.
+- Add a backend helper for simple fraud heuristics:
+  - repeated text or copy-paste patterns
+  - rating/text mismatch
+  - too-short/too-long review content
+  - suspicious posting frequency
+- Store the detected issues in the review record so the future LLM can learn from them.
+- Add a frontend view (admin) showing pending reviews and flagged review reasons.
+
+Short-term outcome:
+- Admins can moderate reviews with better structure.
+- The system captures enough signals to later automate review quality checks with AI.
+
+Next after that:
+- Integrate the AI recommendation service.
+- Build the cost estimator backend.
+- Expand GIS/emergency mapping features.

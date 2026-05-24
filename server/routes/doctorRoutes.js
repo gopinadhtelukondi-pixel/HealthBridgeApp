@@ -1,5 +1,7 @@
 import express from "express";
-import upload from "../middleware/uploadMiddleware.js";
+import { uploadDoctorImage } from "../middleware/uploadMiddleware.js";
+import auth from "../middleware/auth.js";
+import authorize from "../middleware/authorize.js";
 import {
   getDoctors,
   getDoctorById,
@@ -16,21 +18,21 @@ const router = express.Router();
 router.get("/", getDoctors);
 
 // GET doctor dashboard
-router.get("/dashboard/:doctorId", getDoctorDashboard);
+router.get("/dashboard/:doctorId", auth, authorize(["doctor", "admin"]), getDoctorDashboard);
 
 // GET doctor analytics
-router.get("/:doctorId/analytics", getDoctorAnalytics);
+router.get("/:doctorId/analytics", auth, authorize(["doctor", "admin"]), getDoctorAnalytics);
 
 // GET doctor dashboard reviews with filters
-router.get("/:doctorId/reviews", getDoctorDashboardReviews);
+router.get("/:doctorId/reviews", auth, authorize(["doctor", "admin"]), getDoctorDashboardReviews);
 
 // GET doctor details
 router.get("/:id", getDoctorById);
 
 // FIX: use one POST route so optional image uploads and plain form submissions share createDoctor.
-router.post("/", upload.single("image"), createDoctor);
+router.post("/", auth, authorize(["admin"]), uploadDoctorImage.single("image"), createDoctor);
 
 // PUT doctor profile
-router.put("/:id/profile", updateDoctorProfile);
+router.put("/:id/profile", auth, authorize(["doctor", "admin"]), uploadDoctorImage.single("image"), updateDoctorProfile);
 
 export default router;

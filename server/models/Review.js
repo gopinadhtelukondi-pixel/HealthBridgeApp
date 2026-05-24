@@ -22,6 +22,13 @@ const ReviewSchema = new Schema(
     ratings: { type: RatingsSchema, required: true },
     recommend: { type: Boolean, default: false },
     text: { type: String, default: "" },
+    billUrl: { type: String, default: "" },
+    reviewSource: {
+      type: String,
+      enum: ["web", "mobile", "email", "other"],
+      default: "web",
+    },
+    fraudScore: { type: Number, default: 0 },
     response: {
       text: { type: String },
       responderId: { type: Schema.Types.ObjectId, ref: "AuthUser" },

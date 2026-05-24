@@ -12,6 +12,12 @@ const normalizeDoctor = (doctor) => {
   };
 };
 
+const canAccessDoctorData = (req, doctorId) => {
+  if (req.user?.role === "admin") return true;
+  if (req.user?.role === "doctor" && req.user.doctorProfile?.toString() === doctorId) return true;
+  return false;
+};
+
 export const getDoctors = async (req, res) => {
   try {
     // FIX: keep doctor listing working even when MongoDB has no seeded doctors yet.
@@ -81,6 +87,11 @@ export const createDoctor = async (req, res) => {
 export const updateDoctorProfile = async (req, res) => {
   try {
     const { id } = req.params;
+
+    if (!canAccessDoctorData(req, id)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
     const { name, phone, city, hospital, spec, fee, exp, bio, education, nmcId, certifications, achievements, qualifications, tags } = req.body;
 
     // Validate numeric fields
@@ -102,6 +113,15 @@ export const updateDoctorProfile = async (req, res) => {
     const doctor = await Doctor.findById(id);
     if (!doctor) return res.status(404).json({ message: "Doctor not found" });
 
+    const parseField = (value) => {
+      if (typeof value !== "string") return value;
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    };
+
     // Update allowed fields
     const updateData = {};
     if (name) updateData.name = name;
@@ -114,10 +134,11 @@ export const updateDoctorProfile = async (req, res) => {
     if (bio) updateData.bio = bio;
     if (education) updateData.education = education;
     if (nmcId) updateData.nmcId = nmcId;
-    if (certifications) updateData.certifications = certifications;
-    if (achievements) updateData.achievements = achievements;
-    if (qualifications) updateData.qualifications = qualifications;
-    if (tags) updateData.tags = tags;
+    if (certifications) updateData.certifications = parseField(certifications);
+    if (achievements) updateData.achievements = parseField(achievements);
+    if (qualifications) updateData.qualifications = parseField(qualifications);
+    if (tags) updateData.tags = parseField(tags);
+    if (req.file?.path) updateData.image = req.file.path;
     
     updateData.profile_updated_at = new Date();
 
@@ -133,6 +154,10 @@ export const updateDoctorProfile = async (req, res) => {
 export const getDoctorDashboard = async (req, res) => {
   try {
     const { doctorId } = req.params;
+
+    if (!canAccessDoctorData(req, doctorId)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
 
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) return res.status(404).json({ message: "Doctor not found" });
@@ -221,6 +246,10 @@ export const getDoctorAnalytics = async (req, res) => {
   try {
     const { doctorId } = req.params;
 
+    if (!canAccessDoctorData(req, doctorId)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) return res.status(404).json({ message: "Doctor not found" });
 
@@ -285,6 +314,10 @@ export const getDoctorDashboardReviews = async (req, res) => {
   try {
     const { doctorId } = req.params;
     const { status = "all", sort = "newest", page = 1, limit = 10, search } = req.query;
+
+    if (!canAccessDoctorData(req, doctorId)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
 
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) return res.status(404).json({ message: "Doctor not found" });
