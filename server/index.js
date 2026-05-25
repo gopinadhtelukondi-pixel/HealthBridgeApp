@@ -23,7 +23,11 @@ connectDB();
 const app = express();
 
 // MIDDLEWARE
-app.use(cors());
+app.use(cors(
+  {origin: "https://healthbridge-app-ruddy.vercel.app/", // Update with your frontend URL
+    methods: "GET,POST,PUT,DELETE",
+  credentials: true}
+));
 app.use(express.json());
 
 // TEST ROUTE
