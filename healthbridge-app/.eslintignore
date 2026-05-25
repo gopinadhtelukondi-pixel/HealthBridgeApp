@@ -1,0 +1,3 @@
+# FIX: skip generated and dependency folders during lint checks.
+dist
+node_modules

@@ -1,0 +1,124 @@
+/*
+ * src/index.css
+ * ─────────────────────────────────────────────────────────────
+ * Entry CSS file.
+ *
+ * Order matters:
+ *   1. @tailwind base     → Tailwind's CSS reset (Preflight)
+ *   2. @tailwind components → Component classes (rarely used directly)
+ *   3. @tailwind utilities  → All utility classes (bg-*, text-*, etc.)
+ *   4. Custom global overrides that can't be done with utilities
+ * ─────────────────────────────────────────────────────────────
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base layer overrides ─────────────────────────────────── */
+@layer base {
+  /* Custom scrollbar — thin and on-brand */
+  ::-webkit-scrollbar         { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track   { background: transparent; }
+  ::-webkit-scrollbar-thumb   { background: #d4ddd9; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #7a8f85; }
+
+  /* Smooth scrolling site-wide */
+  html { scroll-behavior: smooth; }
+
+  /* Body base — uses our custom font tokens from tailwind.config */
+  body {
+    @apply font-sans bg-bg text-ink antialiased;
+    min-height: 100vh;
+  }
+
+  /* Remove default button styles so our components start clean */
+  button { font-family: inherit; }
+}
+
+/* ── Component layer — reusable multi-utility combos ──────── */
+@layer components {
+  /*
+   * .page-enter
+   * Applied to every page component's root element.
+   * Gives a smooth fade+slide-up transition when navigating.
+   */
+  .page-enter {
+    @apply animate-fade-in-up;
+  }
+
+  /*
+   * .card
+   * Base card surface used across doctor, hospital, and cost cards.
+   * Extend with additional utilities in JSX (e.g. hover:shadow-card-lg).
+   */
+  .card {
+    @apply bg-bg-card border border-line-light rounded-card shadow-card
+           transition-all duration-200;
+  }
+
+  /*
+   * .section-title
+   * Large serif heading used at the top of each section.
+   */
+  .section-title {
+    @apply font-serif text-3xl text-primary font-normal;
+  }
+
+  /*
+   * .tag-pill
+   * Small label chip for specialization tags on doctor cards.
+   */
+  .tag-pill {
+    @apply bg-bg text-ink-mid text-[11px] font-medium
+           rounded-[6px] px-2.5 py-0.5;
+  }
+
+  /*
+   * .nav-link
+   * Navigation bar link — highlights when active.
+   */
+  .nav-link {
+    @apply px-3.5 py-1.5 rounded-lg text-sm font-medium text-ink-mid
+           transition-all duration-200 cursor-pointer border-none bg-transparent
+           hover:bg-accent-dim hover:text-primary;
+  }
+
+  .nav-link.active {
+    @apply bg-accent-dim text-primary;
+  }
+
+  /*
+   * .input-field
+   * Shared style for all form inputs and selects.
+   */
+  .input-field {
+    @apply w-full px-4 py-3 border border-line rounded-lg bg-bg
+           text-ink font-sans text-[15px] outline-none
+           transition-all duration-200
+           focus:border-accent focus:bg-white focus:ring-2 focus:ring-accent/20;
+  }
+
+  /*
+   * .badge
+   * Small colored label — verified, NABH, experience, etc.
+   */
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-[6px] px-2 py-0.5
+           text-[11px] font-semibold;
+  }
+
+  .badge-verified { @apply badge bg-success-bg text-success; }
+  .badge-nabh     { @apply badge bg-info-bg text-info; }
+  .badge-exp      { @apply badge bg-warn-bg text-warn; }
+  .badge-danger   { @apply badge bg-danger-bg text-danger; }
+}
+
+/* ── Utility layer — one-off helpers ──────────────────────── */
+@layer utilities {
+  /* Mono font for currency / numeric data values */
+  .font-data { font-family: 'JetBrains Mono', monospace; }
+
+  /* Star gold color shortcut */
+  .text-gold { color: #d4a017; }
+}
