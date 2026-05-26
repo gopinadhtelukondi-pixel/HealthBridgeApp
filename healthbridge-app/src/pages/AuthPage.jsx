@@ -7,14 +7,13 @@
  * ─────────────────────────────────────────────────────────────
  */
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { PatientAuthModal } from '@/components/auth/PatientAuthModal'
 import { DoctorAuthModal } from '@/components/auth/DoctorAuthModal'
 import { useApp } from '@/context/AppContext'
 
 export default function AuthPage() {
-  const navigate = useNavigate()
   const { currentUser, setAuthenticatedUser } = useApp()
   const [showPatientAuth, setShowPatientAuth] = useState(false)
   const [showDoctorAuth, setShowDoctorAuth] = useState(false)
@@ -34,32 +33,32 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-bg to-accent/5 flex items-center justify-center px-5">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-bg to-accent/5 flex items-center justify-center px-4 py-8 sm:px-5 sm:py-10">
       <div className="max-w-4xl w-full">
         {/* Header Section */}
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-6">
+        <div className="text-center mb-10 sm:mb-16">
+          <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-primary/10 mb-5 sm:mb-6">
             <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
             </svg>
           </div>
 
-          <h1 className="font-serif text-5xl lg:text-6xl text-primary mb-4 font-normal">
+          <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-primary mb-3 sm:mb-4 font-normal">
             HealthBridge
           </h1>
-          <p className="text-xl text-ink-mid mb-2">
+          <p className="text-lg sm:text-xl text-ink-mid mb-2">
             India&apos;s First Healthcare Transparency Platform
           </p>
-          <p className="text-ink-muted max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base text-ink-muted max-w-2xl mx-auto">
             Transparent outcomes, verified doctors, real cost data, and AI-powered matching — 
             so every medical decision is informed, not guessed.
           </p>
         </div>
 
         {/* Auth Cards Grid */}
-        <div className="grid md:grid-cols-2 gap-8 mb-12">
+        <div className="grid md:grid-cols-2 gap-5 sm:gap-8 mb-8 sm:mb-12">
           {/* Patient Card */}
-          <div className="bg-white rounded-2xl p-8 border border-line-light shadow-card hover:shadow-card-lg transition-shadow duration-300">
+          <div className="bg-white rounded-2xl p-5 sm:p-8 border border-line-light shadow-card hover:shadow-card-lg transition-shadow duration-300">
             <div className="flex items-center justify-center w-14 h-14 rounded-full bg-accent/10 mb-6">
               <span className="text-3xl">👤</span>
             </div>
@@ -100,7 +99,7 @@ export default function AuthPage() {
           </div>
 
           {/* Doctor Card */}
-          <div className="bg-white rounded-2xl p-8 border border-line-light shadow-card hover:shadow-card-lg transition-shadow duration-300">
+          <div className="bg-white rounded-2xl p-5 sm:p-8 border border-line-light shadow-card hover:shadow-card-lg transition-shadow duration-300">
             <div className="flex items-center justify-center w-14 h-14 rounded-full bg-accent/10 mb-6">
               <span className="text-3xl">👨‍⚕️</span>
             </div>
@@ -142,7 +141,7 @@ export default function AuthPage() {
         </div>
 
         {/* Admin card for moderation access */}
-        <div className="bg-white rounded-2xl p-8 border border-line-light shadow-card hover:shadow-card-lg transition-shadow duration-300">
+        <div className="bg-white rounded-2xl p-5 sm:p-8 border border-line-light shadow-card hover:shadow-card-lg transition-shadow duration-300">
           <div className="flex items-center justify-center w-14 h-14 rounded-full bg-accent/10 mb-6">
             <span className="text-3xl">🛡️</span>
           </div>
@@ -164,7 +163,7 @@ export default function AuthPage() {
         </div>
 
         {/* Footer Info */}
-        <div className="text-center text-sm text-ink-muted">
+        <div className="text-center text-xs sm:text-sm text-ink-muted">
           <p>
             By signing up, you agree to our{' '}
             <a href="#" className="text-accent hover:text-primary transition-colors">

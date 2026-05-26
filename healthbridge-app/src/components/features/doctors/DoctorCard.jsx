@@ -24,7 +24,7 @@ export function DoctorCard({ doctor }) {
         origin-left transition-transform duration-300
       " />
 
-      <div className="flex gap-3.5 items-start mb-4 p-6 pb-0">
+      <div className="flex gap-3.5 items-start mb-4 p-5 sm:p-6 pb-0">
         {doctor.image ? (
           <img
             src={doctor.image}
@@ -56,7 +56,7 @@ export function DoctorCard({ doctor }) {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-1.5 mb-4 px-6">
+      <div className="flex flex-wrap gap-1.5 mb-4 px-5 sm:px-6">
         {(doctor.tags || []).map(tag => (
           <span key={tag} className="tag-pill">{tag}</span>
         ))}
@@ -68,7 +68,7 @@ export function DoctorCard({ doctor }) {
       </div>
 
       {ranking && (
-        <div className="grid grid-cols-2 gap-2 px-6 mb-4">
+        <div className="grid grid-cols-2 gap-2 px-5 sm:px-6 mb-4">
           <div className="bg-bg rounded-card p-2">
             <p className="text-[11px] text-ink-muted">Recommend</p>
             <p className="font-data font-semibold text-primary">{ranking.recommendationPercentage}%</p>
@@ -81,8 +81,8 @@ export function DoctorCard({ doctor }) {
       )}
 
       <div className="
-        flex items-center justify-between
-        px-6 pb-6 pt-4
+        flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3
+        px-5 sm:px-6 pb-5 sm:pb-6 pt-4
         border-t border-line-light
       ">
         <div>
@@ -96,7 +96,7 @@ export function DoctorCard({ doctor }) {
           onClick={e => { e.stopPropagation(); goToDetail() }}
           className="
             bg-primary text-white text-[13px] font-semibold
-            px-4 py-2 rounded-lg font-sans
+            px-4 py-2 rounded-lg font-sans w-full sm:w-auto
             transition-all duration-200
             hover:bg-accent active:scale-95
           "

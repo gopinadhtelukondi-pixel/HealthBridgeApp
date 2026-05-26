@@ -20,16 +20,16 @@ export function Modal({ open, onClose, title, children }) {
 
   return createPortal(
     <div
-      className="fixed inset-0 bg-black/50 z-[2000] flex items-center justify-center p-5"
+      className="fixed inset-0 bg-black/50 z-[2000] flex items-end sm:items-center justify-center p-0 sm:p-5"
       onClick={onClose}
     >
       <div
-        // FIX: long auth forms, especially doctor signup, can scroll inside the modal.
-        className="bg-bg-card rounded-xl2 p-9 max-w-[560px] w-full max-h-[calc(100vh-40px)] overflow-y-auto shadow-card-lg animate-scale-in"
+        // Keep auth forms usable on short mobile screens without horizontal clipping.
+        className="bg-bg-card w-full sm:max-w-[560px] rounded-t-[24px] sm:rounded-xl2 p-5 sm:p-9 max-h-[92dvh] overflow-y-auto overscroll-contain shadow-card-lg animate-scale-in"
         onClick={e => e.stopPropagation()}
       >
         {title && (
-          <h3 className="font-serif text-2xl text-primary font-normal mb-3">
+          <h3 className="font-serif text-[28px] sm:text-2xl text-primary font-normal mb-3">
             {title}
           </h3>
         )}

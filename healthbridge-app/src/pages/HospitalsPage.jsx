@@ -29,14 +29,14 @@ export default function HospitalsPage() {
   }, []);
 
   return (
-    <div className="max-w-6xl mx-auto px-8 py-10 page-enter">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 page-enter">
 
       {/* Header */}
       <div className="mb-8">
-        <h1 className="font-serif text-4xl text-primary font-normal mb-2">
+        <h1 className="font-serif text-3xl sm:text-4xl text-primary font-normal mb-2">
           Hospital Intelligence
         </h1>
-        <p className="text-ink-mid text-[16px]">
+        <p className="text-ink-mid text-sm sm:text-[16px]">
           AI-computed transparency scores based on verified patient outcomes,
           cost accuracy, and facility standards.
         </p>

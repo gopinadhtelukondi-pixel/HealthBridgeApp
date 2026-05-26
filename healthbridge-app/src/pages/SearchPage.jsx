@@ -35,13 +35,13 @@ export default function SearchPage() {
   const specialties = [...new Set(results.map((d) => d.spec))];
 
   return (
-    <div className="max-w-6xl mx-auto px-8 py-10 page-enter">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 page-enter">
 
       {/* ── Filter Bar ───────────────────────── */}
-      <div className="flex flex-wrap gap-3 mb-6 items-center">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 mb-6 items-stretch sm:items-center">
 
         {/* 🔍 Search Input */}
-        <div className="flex-1 min-w-[220px] flex items-center gap-2 bg-bg-card border-[1.5px] border-line rounded-lg px-4 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20 transition-all">
+        <div className="w-full sm:flex-1 sm:min-w-[220px] flex items-center gap-2 bg-bg-card border-[1.5px] border-line rounded-lg px-4 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20 transition-all">
           <svg className="w-4 h-4 text-ink-muted flex-shrink-0" fill="none" viewBox="0 0 20 20">
             <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.5"/>
             <path d="M13.5 13.5L17 17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -59,7 +59,7 @@ export default function SearchPage() {
         <select
           value={specialty}
           onChange={(e) => setSpecialty(e.target.value)}
-          className="input-field w-auto"
+          className="input-field w-full sm:w-auto"
         >
           <option value="">All Specialties</option>
           {specialties.map((s) => (
@@ -71,7 +71,7 @@ export default function SearchPage() {
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
-          className="input-field w-auto"
+          className="input-field w-full sm:w-auto"
         >
           <option value="trust">Smart Trust Score</option>
           <option value="affordable">Best Affordable</option>

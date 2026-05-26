@@ -81,7 +81,7 @@ export function PatientAuthModal({ open, onClose }) {
 
   return (
     <Modal open={open} onClose={onClose} title={isLogin ? 'Patient Login' : 'Patient Signup'}>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
         {!isLogin && (
           <>
             <div>
@@ -92,7 +92,7 @@ export function PatientAuthModal({ open, onClose }) {
                 value={formData.name}
                 onChange={handleChange}
                 placeholder="Enter your name"
-                className="w-full px-4 py-2.5 border border-line rounded-lg focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 font-sans text-sm"
+                className="input-field"
               />
             </div>
 
@@ -104,7 +104,7 @@ export function PatientAuthModal({ open, onClose }) {
                 value={formData.phone}
                 onChange={handleChange}
                 placeholder="+91 9876543210"
-                className="w-full px-4 py-2.5 border border-line rounded-lg focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 font-sans text-sm"
+                className="input-field"
               />
             </div>
 
@@ -116,7 +116,7 @@ export function PatientAuthModal({ open, onClose }) {
                 value={formData.city}
                 onChange={handleChange}
                 placeholder="Vijayawada"
-                className="w-full px-4 py-2.5 border border-line rounded-lg focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 font-sans text-sm"
+                className="input-field"
               />
             </div>
           </>
@@ -130,7 +130,7 @@ export function PatientAuthModal({ open, onClose }) {
             value={formData.email}
             onChange={handleChange}
             placeholder="your.email@example.com"
-            className="w-full px-4 py-2.5 border border-line rounded-lg focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 font-sans text-sm"
+            className="input-field"
           />
         </div>
 
@@ -142,7 +142,7 @@ export function PatientAuthModal({ open, onClose }) {
             value={formData.password}
             onChange={handleChange}
             placeholder="Minimum 6 characters"
-            className="w-full px-4 py-2.5 border border-line rounded-lg focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 font-sans text-sm"
+            className="input-field"
           />
         </div>
 

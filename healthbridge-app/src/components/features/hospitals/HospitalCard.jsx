@@ -61,7 +61,7 @@ export function HospitalCard({ hospital }) {
     <article
       onClick={() => addToast(`Viewing ${hospital.name} details`, 'success')}
       className="
-        card grid grid-cols-[1fr_auto] gap-4 p-6
+        card grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 p-5 sm:p-6
         cursor-pointer items-start
         hover:-translate-y-1 hover:shadow-card-lg hover:border-primary
         transition-all duration-200
@@ -93,7 +93,7 @@ export function HospitalCard({ hospital }) {
       </div>
 
       {/* Stats: beds, doctors, departments */}
-      <div className="flex gap-5 mb-3">
+      <div className="flex flex-wrap gap-4 sm:gap-5 mb-3">
         {[
           { num: hospital.beds,               lbl: 'Beds' },
           { num: hospital.doctors,            lbl: 'Doctors' },
@@ -114,7 +114,9 @@ export function HospitalCard({ hospital }) {
       </div>
 
       {/* ── Right: transparency score ring ──────────────── */}
-      <ScoreRing score={hospital.transparencyScore} />
+      <div className="justify-self-start sm:justify-self-auto">
+        <ScoreRing score={hospital.transparencyScore} />
+      </div>
     </article>
   )
 }

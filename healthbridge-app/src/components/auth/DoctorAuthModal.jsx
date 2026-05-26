@@ -103,78 +103,78 @@ export function DoctorAuthModal({ open, onClose }) {
 
   return (
     <Modal open={open} onClose={onClose} title={isLogin ? 'Doctor Login' : 'Doctor Signup'}>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
         {!isLogin && (
           <>
             <div>
               <label className="block text-sm font-semibold text-ink mb-1.5">Full Name</label>
-              <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Dr. Name" className="w-full px-4 py-2.5 border border-line rounded-lg focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 font-sans text-sm" />
+              <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Dr. Name" className="input-field" />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-ink mb-1.5">Phone</label>
-                <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="+91 9876543210" className="w-full px-4 py-2.5 border border-line rounded-lg focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 font-sans text-sm" />
+                <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="+91 9876543210" className="input-field" />
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-ink mb-1.5">City</label>
-                <input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="Vijayawada" className="w-full px-4 py-2.5 border border-line rounded-lg focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 font-sans text-sm" />
+                <input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="Vijayawada" className="input-field" />
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-ink mb-1.5">Medical License Number</label>
-              <input type="text" name="license" value={formData.license} onChange={handleChange} placeholder="NMC License Number" className="w-full px-4 py-2.5 border border-line rounded-lg focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 font-sans text-sm" />
+              <input type="text" name="license" value={formData.license} onChange={handleChange} placeholder="NMC License Number" className="input-field" />
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-ink mb-1.5">Hospital / Clinic</label>
-              <input type="text" name="hospital" value={formData.hospital} onChange={handleChange} placeholder="Your hospital name" className="w-full px-4 py-2.5 border border-line rounded-lg focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 font-sans text-sm" />
+              <input type="text" name="hospital" value={formData.hospital} onChange={handleChange} placeholder="Your hospital name" className="input-field" />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-ink mb-1.5">Specialty</label>
-                <input type="text" name="spec" value={formData.spec} onChange={handleChange} placeholder="Cardiologist" className="w-full px-4 py-2.5 border border-line rounded-lg focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 font-sans text-sm" />
+                <input type="text" name="spec" value={formData.spec} onChange={handleChange} placeholder="Cardiologist" className="input-field" />
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-ink mb-1.5">Fee</label>
-                <input type="number" min="1" name="fee" value={formData.fee} onChange={handleChange} placeholder="800" className="w-full px-4 py-2.5 border border-line rounded-lg focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 font-sans text-sm" />
+                <input type="number" min="1" name="fee" value={formData.fee} onChange={handleChange} placeholder="800" className="input-field" />
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-ink mb-1.5">Experience</label>
-                <input type="number" min="0" name="exp" value={formData.exp} onChange={handleChange} placeholder="10" className="w-full px-4 py-2.5 border border-line rounded-lg focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 font-sans text-sm" />
+                <input type="number" min="0" name="exp" value={formData.exp} onChange={handleChange} placeholder="10" className="input-field" />
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-ink mb-1.5">Education</label>
-              <input type="text" name="education" value={formData.education} onChange={handleChange} placeholder="MBBS, MD" className="w-full px-4 py-2.5 border border-line rounded-lg focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 font-sans text-sm" />
+              <input type="text" name="education" value={formData.education} onChange={handleChange} placeholder="MBBS, MD" className="input-field" />
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-ink mb-1.5">Tags</label>
-              <input type="text" name="tags" value={formData.tags} onChange={handleChange} placeholder="Heart Failure, Angioplasty" className="w-full px-4 py-2.5 border border-line rounded-lg focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 font-sans text-sm" />
+              <input type="text" name="tags" value={formData.tags} onChange={handleChange} placeholder="Heart Failure, Angioplasty" className="input-field" />
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-ink mb-1.5">Bio</label>
-              <textarea name="bio" value={formData.bio} onChange={handleChange} placeholder="Short professional profile" className="w-full px-4 py-2.5 border border-line rounded-lg focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 font-sans text-sm min-h-[80px]" />
+              <textarea name="bio" value={formData.bio} onChange={handleChange} placeholder="Short professional profile" className="input-field min-h-[96px]" />
             </div>
           </>
         )}
 
         <div>
           <label className="block text-sm font-semibold text-ink mb-1.5">Email</label>
-          <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="doctor@example.com" className="w-full px-4 py-2.5 border border-line rounded-lg focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 font-sans text-sm" />
+          <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="doctor@example.com" className="input-field" />
         </div>
 
         <div>
           <label className="block text-sm font-semibold text-ink mb-1.5">Password</label>
-          <input type="password" name="password" value={formData.password} onChange={handleChange} placeholder="Minimum 6 characters" className="w-full px-4 py-2.5 border border-line rounded-lg focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 font-sans text-sm" />
+          <input type="password" name="password" value={formData.password} onChange={handleChange} placeholder="Minimum 6 characters" className="input-field" />
         </div>
 
         <Button type="submit" size="md" className="w-full" disabled={loading}>
