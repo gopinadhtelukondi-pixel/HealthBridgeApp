@@ -1,7 +1,11 @@
 import axios from "axios";
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL?.trim() ||
+  "https://healthbridgeapp.onrender.com/api";
+
 const API = axios.create({
-  baseURL: "https://healthbridgeapp.onrender.com/api",
+  baseURL: API_BASE_URL,
 });
 
 API.interceptors.request.use((config) => {

@@ -22,24 +22,47 @@ connectDB();
 
 const app = express();
 
-// Read allowed origins from env or default list (comma-separated)
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:5173,https://healthbridge-app-ruddy.vercel.app,https://health-bridge-app-n92m.vercel.app").split(",").map(o => o.trim());
+const defaultAllowedOrigins = [
+  "http://localhost:5173",
+  "https://healthbridge-app-ruddy.vercel.app",
+  "https://health-bridge-app-n92m.vercel.app",
+];
 
-// CORS middleware with dynamic origin check so deployed frontends are accepted
-app.use(cors({
+// Read explicitly allowed origins from env and also accept Vercel preview domains.
+const allowedOrigins = new Set(
+  (process.env.ALLOWED_ORIGINS || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+    .concat(defaultAllowedOrigins)
+);
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (allowedOrigins.has(origin)) return true;
+
+  try {
+    const { protocol, hostname } = new URL(origin);
+    return protocol === "https:" && hostname.endsWith(".vercel.app");
+  } catch {
+    return false;
+  }
+};
+
+const corsOptions = {
   origin: (origin, callback) => {
-    // allow non-browser requests (Postman, server-to-server) when origin is undefined
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error('CORS_NOT_ALLOWED'));
+    // Allow browser requests from known origins plus Vercel preview URLs.
+    if (isAllowedOrigin(origin)) return callback(null, true);
+    return callback(new Error(`CORS_NOT_ALLOWED: ${origin}`));
   },
-  methods: "GET,POST,PUT,DELETE,OPTIONS",
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
+  optionsSuccessStatus: 204,
+};
 
-// allow preflight for all routes
-app.options('*', cors());
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 app.use(express.json());
 
 // TEST ROUTE
