@@ -21,17 +21,25 @@ dotenv.config();
 connectDB();
 
 const app = express();
-const origins = [
-  "http://localhost:5173",
-  "https://healthbridge-app-ruddy.vercel.app",
-]
-// MIDDLEWARE
-app.use(cors(
-  {origin: origins,
-    methods: "GET,POST,PUT,DELETE",
-    credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"]}
-));
+
+// Read allowed origins from env or default list (comma-separated)
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:5173,https://healthbridge-app-ruddy.vercel.app,https://health-bridge-app-n92m.vercel.app").split(",").map(o => o.trim());
+
+// CORS middleware with dynamic origin check so deployed frontends are accepted
+app.use(cors({
+  origin: (origin, callback) => {
+    // allow non-browser requests (Postman, server-to-server) when origin is undefined
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('CORS_NOT_ALLOWED'));
+  },
+  methods: "GET,POST,PUT,DELETE,OPTIONS",
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
+// allow preflight for all routes
+app.options('*', cors());
 app.use(express.json());
 
 // TEST ROUTE
