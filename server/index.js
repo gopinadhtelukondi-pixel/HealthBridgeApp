@@ -21,12 +21,16 @@ dotenv.config();
 connectDB();
 
 const app = express();
-
+const origins = [
+  "http://localhost:5173",
+  "https://healthbridge-app-ruddy.vercel.app",
+]
 // MIDDLEWARE
 app.use(cors(
-  {origin: "https://healthbridge-app-ruddy.vercel.app/", // Update with your frontend URL
+  {origin: origins,
     methods: "GET,POST,PUT,DELETE",
-  credentials: true}
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"]}
 ));
 app.use(express.json());
 
